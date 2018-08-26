@@ -6,7 +6,6 @@
 #                     LOAD PACKAGES
 #=======================================================#
 
-#testtesttest
 library(tidyverse)
 library(httr)
 library(jsonlite)
@@ -70,14 +69,26 @@ names(request_1)
 #Process API request content:
 request_1_content <- content(request_1)
 
-#Apply function across all list elements to extract the name and address of each repo:
-request_1_df <- lapply(request_1_content,
-                       function(x){
-                         df <- data_frame(INDICATOR_ID = x$name,
-                                          INDICATOR_NAME = x$html_url,
-                                          VALUE = x$git_commits_url,
-                                          PERIOD = x$period,
-                                          F_YEAR = x$fyear,
-                                          CURRENCY = x$currency,
-                                          PERIOD_END_DATE = x$`period-end-date`)
-                         }) %>% bind_rows()
+#Format API request content:
+for(i in 1:length(request_1_content)){
+  
+  #Initialise dataframe:
+  if(i == 1){ #On first loop...
+    request_1_df <- data.frame(matrix(nrow = 0, ncol = length(names))) #Intialise the data frame.
+    request_1_df <- request_1_df %>% mutate_all(as.character) #Change all to character, avoid errors to do with factors.
+    }
+  
+  #Extract data from request content:
+  vals <- as.character(request_1_content[[i]]) #Values corresponding to those names.
+  
+  #Assign current row of data to DF:
+  request_1_df <- rbind(request_1_df, vals)
+  request_1_df <- request_1_df %>% mutate_all(as.character) #Change all to character, avoid errors to do with factors.
+  
+  #Assign names to DF:
+  if(i == length(request_1_content)){
+    names(request_1_df) <- names(request_1_content[[i]]) #Assign names of columns.
+  }
+}
+
+
