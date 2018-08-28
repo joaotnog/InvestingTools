@@ -136,6 +136,7 @@ GET_INFO_BY_SFID <- function(sfid, api_key){
   return(response_df)
 }
 
+<<<<<<< HEAD
 #Example:
 example_2 <- GET_INFO_BY_SFID("65735", api_key)
 
@@ -178,3 +179,41 @@ GET_STATMENTS_BY_SFID <- function(sfid, api_key, fyear,
     stop(paste0("Error code: 400! Bad request: ", response_content[[1]]))
   }
 }
+=======
+#Example request:
+request_1 <- GET_BY_SFID(sfid = "65735", type = "ratios", api_key)
+
+#=======================================================#
+#                     EXAMINE RESPONSE
+#=======================================================#
+
+#Examine response components:
+names(request_1)
+
+#Process API request content:
+request_1_content <- content(request_1)
+
+#Format API request content:
+for(i in 1:length(request_1_content)){
+  
+  #Initialise dataframe:
+  if(i == 1){ #On first loop...
+    request_1_df <- data.frame(matrix(nrow = 0, ncol = length(names))) #Intialise the data frame.
+    request_1_df <- request_1_df %>% mutate_all(as.character) #Change all to character, avoid errors to do with factors.
+    }
+  
+  #Extract data from request content:
+  vals <- as.character(request_1_content[[i]]) #Values corresponding to those names.
+  
+  #Assign current row of data to DF:
+  request_1_df <- rbind(request_1_df, vals)
+  request_1_df <- request_1_df %>% mutate_all(as.character) #Change all to character, avoid errors to do with factors.
+  
+  #Assign names to DF:
+  if(i == length(request_1_content)){
+    names(request_1_df) <- names(request_1_content[[i]]) #Assign names of columns.
+  }
+}
+
+
+>>>>>>> 3797983f9a5ceb77597bdcd9ecc96d5cfb21b6c1
