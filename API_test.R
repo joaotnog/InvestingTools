@@ -2,13 +2,14 @@
 ##########==================================== API TEST ===============================================##########
 #===============================================================================================================#
 
-#=================================================================# 
+#=================================================================#
 #                     LOAD PACKAGES
 #=================================================================#
 
 library(tidyverse)
 library(httr)
 library(jsonlite)
+library(dplyr)
 
 #=================================================================#
 #                     SETUP FOR TESTING
@@ -136,16 +137,14 @@ GET_INFO_BY_SFID <- function(sfid, api_key){
   return(response_df)
 }
 
-<<<<<<< HEAD
 #Example:
 example_2 <- GET_INFO_BY_SFID("65735", api_key)
 
 #=================================================================#
 #                     GET GENERAL INFO BY SIMFIN ID ##WIP
 #=================================================================#
-#https://simfin.com/api/v1/companies/id/{companyId}/statements/standardised
 
-GET_STATMENTS_BY_SFID <- function(sfid, api_key, fyear,
+GET_STATEMENTS_BY_SFID <- function(sfid, api_key, fyear,
                                   stype = c("pl", "bs", "cf"), 
                                   ptype = c("TTM", "TTM-1", "TTM-2", "Q1", "Q2", "Q3", "Q4", "H1", "H2", "9M", "FY")
                                   ){
@@ -153,21 +152,26 @@ GET_STATMENTS_BY_SFID <- function(sfid, api_key, fyear,
   
   #Evaluate argument choice:
   stype <- match.arg(stype)
-  ptype <- match.arg(ptype)
+  if(missing(ptype)){
+    ptype <- "TTM"
+  } else{
+    ptype <- match.arg(ptype)
+  }
 
   #Construct request URL:
   url_api_root <- "https://simfin.com/api/v1/companies/id/" #Define root url for this query.
-  request_url <- paste0(url_api_root, sfid, "/statements/standardised", "?api-key=", api_key)
-  
+  request_base_url <- paste0(url_api_root, sfid, "/statements/standardised") #Base of URL.
+  query_list <- list("api-key" = api_key, "stype" = stype, "ptype" = ptype, "fyear" = fyear) #Build list of query parameters.
+
   #Perform request:
-  cat("Performing request for SFID:", sfid, "...", "\n",
-      "\t", "URL: ", request_url, "\n", "\n")
+  cat("Performing request for SFID:", sfid, "\n",
+        "\t", "Statement type:", stype, ",", "Period type:", ptype, "\n",
+        "\t", "URL: ", request_url, "\n", "\n")
   
   start_time <- Sys.time() #Starting time.
-  response <- GET(request_url) #Request.
+  response <- GET(request_base_url, query = query_list) #Request.
   finish_time <- Sys.time() #Ending time.
   request_status <- status_code(response) #Request status code.
-  
   
   cat("Request for", sfid, ": complete.", "\n",
       "\t", "Status code: ", request_status, "\n",
@@ -178,42 +182,28 @@ GET_STATMENTS_BY_SFID <- function(sfid, api_key, fyear,
   if(request_status == 400){ #Stop process if error:
     stop(paste0("Error code: 400! Bad request: ", response_content[[1]]))
   }
-}
-=======
-#Example request:
-request_1 <- GET_BY_SFID(sfid = "65735", type = "ratios", api_key)
-
-#=======================================================#
-#                     EXAMINE RESPONSE
-#=======================================================#
-
-#Examine response components:
-names(request_1)
-
-#Process API request content:
-request_1_content <- content(request_1)
-
-#Format API request content:
-for(i in 1:length(request_1_content)){
   
-  #Initialise dataframe:
-  if(i == 1){ #On first loop...
-    request_1_df <- data.frame(matrix(nrow = 0, ncol = length(names))) #Intialise the data frame.
-    request_1_df <- request_1_df %>% mutate_all(as.character) #Change all to character, avoid errors to do with factors.
-    }
+  #Format response content:
+  cat("Processing response content...")
   
-  #Extract data from request content:
-  vals <- as.character(request_1_content[[i]]) #Values corresponding to those names.
-  
-  #Assign current row of data to DF:
-  request_1_df <- rbind(request_1_df, vals)
-  request_1_df <- request_1_df %>% mutate_all(as.character) #Change all to character, avoid errors to do with factors.
-  
-  #Assign names to DF:
-  if(i == length(request_1_content)){
-    names(request_1_df) <- names(request_1_content[[i]]) #Assign names of columns.
+  response_content_main <- response_content$values
+  main_colnames <- unique(names(unlist(response_content_main))) #Extract colnames.
+  response_df <- data.frame(matrix(nrow = 0, ncol = length(response_colnames))) #Intialise the data frame.
+  response_df <- response_df %>% mutate_all(as.character) #Change all to character, avoid errors to do with factors.
+  names(response_df) <- main_colnames
+  for(i in 1:length(response_content_main)){
+    vals <- as.data.frame(t(as.data.frame(unlist(response_content_main[i]))))
+    response_df <- bind_rows(response_df, vals)
   }
+
+  cat("Processing complete.")
+  
+  #Return response data content:
+  return(response_df)
 }
 
+#Example request:
+example_3 <- GET_STATEMENTS_BY_SFID(sfid = "65735", api_key, stype = "pl", ptype = "TTM", fyear = "2018")
 
->>>>>>> 3797983f9a5ceb77597bdcd9ecc96d5cfb21b6c1
+
+
